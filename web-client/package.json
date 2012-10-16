@@ -1,0 +1,25 @@
+{
+  "name": "springone-client",
+  "description": "A push client extraveganza.",
+  "homepage": "",
+  "version": "0.1.0",
+  "keywords": [],
+  "dependencies": {
+    "express": ""
+  },
+  "devDependencies": {
+    "buster": "",
+    "grunt-buster": "",
+    "grunt-css": "",
+    "grunt-html": "",
+    "json5": ""
+  },
+  "volo": {
+    "baseUrl": "client/lib",
+    "dependencies": {
+      "curl": "github:cujojs/curl/0.7.0",
+      "rest": "github:scothis/rest/v0.8.1",
+      "when": "github:cujojs/when/1.5.1"
+    }
+  }
+}
