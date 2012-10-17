@@ -31,8 +31,8 @@ public class PushService {
 		this.sockServer = sockServer;
 		
 		this.httpServer.requestHandler(new CorsHandler(getHttpHandler()));
-		this.httpServer.websocketHandler(new WebSocketHandler());
-		//this.sockServer.installApp(new JsonObject().putString("prefix", "/socket"), new SockJSHandler());
+		//this.httpServer.websocketHandler(new WebSocketHandler());
+		this.sockServer.installApp(new JsonObject().putString("prefix", "/socket"), new SockJSHandler());
 	}
 	
 	private Handler<HttpServerRequest> getHttpHandler() {
@@ -51,41 +51,25 @@ public class PushService {
 		return matcher;
 	}
 	
-	private class WebSocketHandler implements Handler<ServerWebSocket> {
-
-		public void handle(ServerWebSocket socket) {
-			// TODO - Hello WebSocket
-			
-		}
-		
-	}
-	
 	private class SockJSHandler implements Handler<SockJSSocket> {
 
 		public void handle(final SockJSSocket socket) {
-			final long timerId = vertx.setTimer(5000, new Handler<Long>() {
-				public void handle(Long timerId) {
-					socket.close();
-				}
+			System.out.println("SockJS connected...");
+			socket.dataHandler(new Handler<Buffer>(){
+
+			    public void handle(Buffer data) {
+			        String msg = data.toString();
+			        socket.writeBuffer(new Buffer("Echo: "+msg));
+			    }
+			    
 			});
 			
-			socket.dataHandler(new Handler<Buffer>() {
-				public void handle(Buffer payload) {
-					vertx.cancelTimer(timerId);
-					
-					//TODO - Handle session creation
-					//JsonObject jsonPayload = new JsonObject(payload.toString());
-					
-				}
-				
-			});
-			
-			//TODO - Handle session close
 			socket.endHandler(new Handler<Void>(){
-				public void handle(Void closeEvent) {
-					//String sessionId = sessions.get(socket.writeHandlerID);
-					
-				}
+
+			    public void handle(Void event) {
+			        System.out.println("SockJS closed.");
+			    }
+			    
 			});
 		}
 
