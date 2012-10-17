@@ -53,8 +53,24 @@ public class PushService {
 	
 	private class WebSocketHandler implements Handler<ServerWebSocket> {
 
-		public void handle(ServerWebSocket socket) {
-			// TODO - Hello WebSocket
+		public void handle(final ServerWebSocket socket) {
+			System.out.println("WebSocket connected...");
+			socket.dataHandler(new Handler<Buffer>(){
+
+				public void handle(Buffer data) {
+					String msg = data.toString();
+					socket.writeTextFrame("Echo: "+msg);
+				}
+				
+			});
+			
+			socket.endHandler(new Handler<Void>(){
+
+				public void handle(Void event) {
+					System.out.println("WebSocket closed.");
+				}
+				
+			});
 			
 		}
 		

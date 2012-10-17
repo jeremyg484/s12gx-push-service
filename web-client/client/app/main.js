@@ -5,6 +5,14 @@ define(['rest/interceptor/mime', 'curl/src/curl/domReady'], function(mime, domRe
     var client = mime();
     if (name) {
         //TODO - communicate with server
+        var socket = new WebSocket("ws://localhost:8080");
+        socket.onmessage = function(event) {
+            var text = event.data;
+            speak(text);
+        }
+        socket.onopen = function() {
+            socket.send("Hello WebSocket!");
+        }
 
         domReady(function(){
             var ctx = document.getElementById("character").getContext('2d');
