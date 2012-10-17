@@ -53,7 +53,7 @@ public class PushService {
 	
 	private class WebSocketHandler implements Handler<ServerWebSocket> {
 
-		public void handle(ServerWebSocket event) {
+		public void handle(ServerWebSocket socket) {
 			// TODO - Hello WebSocket
 			
 		}
