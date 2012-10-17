@@ -74,7 +74,7 @@ public class PushService {
 					vertx.cancelTimer(timerId);
 					
 					//TODO - Handle session creation
-					JsonObject jsonPayload = new JsonObject(payload.toString());
+					//JsonObject jsonPayload = new JsonObject(payload.toString());
 					
 				}
 				
@@ -83,7 +83,7 @@ public class PushService {
 			//TODO - Handle session close
 			socket.endHandler(new Handler<Void>(){
 				public void handle(Void closeEvent) {
-					String sessionId = sessions.get(socket.writeHandlerID);
+					//String sessionId = sessions.get(socket.writeHandlerID);
 					
 				}
 			});
