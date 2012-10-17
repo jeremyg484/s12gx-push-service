@@ -1,20 +1,11 @@
 /*global SockJS:true*/
-define(['./messaging','rest/interceptor/mime', 'curl/src/curl/domReady'], function(Messenger, mime, domReady) {
+define(['rest/interceptor/mime', 'curl/src/curl/domReady'], function(mime, domReady) {
     var windows = [];
     var name = window.location.hash.substr(1);
     var client = mime();
     if (name) {
-        var privateSub, service = new Messenger('http://localhost:8080');
-        service.onready = function() {
-           console.log('Messaging service ready.');
-           service.onmessage = handleMessage;
-           privateSub = service.subscribe(name);
-           privateSub.onmessage = handleMessage;
-        };
-        service.onclose = function() {
-           console.log('close');
-        };
-    
+        //TODO - communicate with server
+
         domReady(function(){
             var ctx = document.getElementById("character").getContext('2d');
             var img = new Image();

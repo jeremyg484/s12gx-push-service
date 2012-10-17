@@ -10,6 +10,7 @@ import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.http.HttpServer;
 import org.vertx.java.core.http.HttpServerRequest;
 import org.vertx.java.core.http.RouteMatcher;
+import org.vertx.java.core.http.ServerWebSocket;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.sockjs.SockJSServer;
 import org.vertx.java.core.sockjs.SockJSSocket;
@@ -30,7 +31,8 @@ public class PushService {
 		this.sockServer = sockServer;
 		
 		this.httpServer.requestHandler(new CorsHandler(getHttpHandler()));
-		this.sockServer.installApp(new JsonObject().putString("prefix", "/socket"), new SockJSHandler());
+		this.httpServer.websocketHandler(new WebSocketHandler());
+		//this.sockServer.installApp(new JsonObject().putString("prefix", "/socket"), new SockJSHandler());
 	}
 	
 	private Handler<HttpServerRequest> getHttpHandler() {
@@ -42,57 +44,20 @@ public class PushService {
 			}
 		});
 		
-		matcher.post("/messages/:topic/", new Handler<HttpServerRequest>() {
-			public void handle(final HttpServerRequest request) {
-				final String topic = request.params().get("topic");
-				request.bodyHandler(new Handler<Buffer>(){
-					public void handle(Buffer body) {
-						JsonObject message = 
-								new JsonObject().putString("topic", topic).
-								putObject("message", new JsonObject(body.toString()));
-						System.out.println("Publishing message: "+message.toString());
-						vertx.eventBus().publish(RabbitService.PUBLISH, message);
-						request.response.end("ok");
-					}
-				});
-			}
-		});
+		//TODO - Add HTTP handler to publish messages
 		
-		matcher.post("/subscriptions/:bindingKey/", new Handler<HttpServerRequest>(){
-			public void handle(final HttpServerRequest request) {
-				final String bindingKey = request.params().get("bindingKey");
-				request.bodyHandler(new Handler<Buffer>(){
-					public void handle(Buffer body) {
-						
-						JsonObject data = new JsonObject(body.toString());
-						
-						vertx.eventBus().send(SessionManager.GET, data, new Handler<Message<JsonObject>>(){
-							public void handle(Message<JsonObject> sessionMsg) {
-								final JsonObject session = sessionMsg.body;
-								if (!session.getArray("bindings").contains(bindingKey)) {
-									session.getArray("bindings").addString(bindingKey);
-									vertx.eventBus().send(SessionManager.UPDATE, session);
-									
-									JsonObject bindMessage = 
-											new JsonObject().putString("id", session.getString("id")).
-											putString("bindingKey", bindingKey);
-									
-									vertx.eventBus().send(RabbitService.BIND, bindMessage, new Handler<Message<JsonObject>>(){
-										public void handle(Message<JsonObject> bindMsg) {
-											request.response.end("ok");
-											JsonObject subscribeOk = new JsonObject().putString("type", "subscribe-ok").putString("topic", bindingKey);
-											vertx.eventBus().send("session-"+session.getString("id"), subscribeOk);
-										}
-									});
-								}
-							}
-						});
-					}
-				});
-			}
-		});
+		//TODO - Add HTTP handler to allow additional subscriptions
 		
 		return matcher;
+	}
+	
+	private class WebSocketHandler implements Handler<ServerWebSocket> {
+
+		public void handle(ServerWebSocket event) {
+			// TODO - Hello WebSocket
+			
+		}
+		
 	}
 	
 	private class SockJSHandler implements Handler<SockJSSocket> {
@@ -107,38 +72,19 @@ public class PushService {
 			socket.dataHandler(new Handler<Buffer>() {
 				public void handle(Buffer payload) {
 					vertx.cancelTimer(timerId);
+					
+					//TODO - Handle session creation
 					JsonObject jsonPayload = new JsonObject(payload.toString());
 					
-					vertx.eventBus().send(SessionManager.CREATE, jsonPayload, 
-							new Handler<Message<JsonObject>>() {
-								public void handle(Message<JsonObject> sessionMsg) {
-									final String sessionId = sessionMsg.body.getString("id");
-									sessions.put(socket.writeHandlerID, sessionId);
-									vertx.eventBus().registerHandler("session-"+sessionId, new Handler<Message<JsonObject>>(){
-										public void handle(Message<JsonObject> dataMessage) {
-											socket.writeBuffer(new Buffer(dataMessage.body.toString()));
-										}
-									});
-									vertx.eventBus().send(RabbitService.CREATE_AND_SUBSCRIBE, sessionMsg.body, new Handler<Message<JsonObject>>(){
-										public void handle(Message<JsonObject> msg) {
-											JsonObject connResponse = 
-													new JsonObject().
-														putString("type", "session-ok").
-														putString("id", sessionId);
-											socket.writeBuffer(new Buffer(connResponse.toString()));
-										}
-									});
-								}
-							});
 				}
 				
 			});
 			
+			//TODO - Handle session close
 			socket.endHandler(new Handler<Void>(){
 				public void handle(Void closeEvent) {
 					String sessionId = sessions.get(socket.writeHandlerID);
-					vertx.eventBus().send(SessionManager.DELETE, new JsonObject().putString("id", sessionId));
-					vertx.eventBus().send(RabbitService.CLOSE_SESSION, new JsonObject().putString("id", sessionId));
+					
 				}
 			});
 		}
