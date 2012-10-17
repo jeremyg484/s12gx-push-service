@@ -50,6 +50,7 @@ public class PushService {
 						JsonObject message = 
 								new JsonObject().putString("topic", topic).
 								putObject("message", new JsonObject(body.toString()));
+						System.out.println("Publishing message: "+message.toString());
 						vertx.eventBus().publish(RabbitService.PUBLISH, message);
 						request.response.end("ok");
 					}
@@ -67,7 +68,7 @@ public class PushService {
 						
 						vertx.eventBus().send(SessionManager.GET, data, new Handler<Message<JsonObject>>(){
 							public void handle(Message<JsonObject> sessionMsg) {
-								JsonObject session = sessionMsg.body;
+								final JsonObject session = sessionMsg.body;
 								if (!session.getArray("bindings").contains(bindingKey)) {
 									session.getArray("bindings").addString(bindingKey);
 									vertx.eventBus().send(SessionManager.UPDATE, session);
@@ -79,6 +80,8 @@ public class PushService {
 									vertx.eventBus().send(RabbitService.BIND, bindMessage, new Handler<Message<JsonObject>>(){
 										public void handle(Message<JsonObject> bindMsg) {
 											request.response.end("ok");
+											JsonObject subscribeOk = new JsonObject().putString("type", "subscribe-ok").putString("topic", bindingKey);
+											vertx.eventBus().send("session-"+session.getString("id"), subscribeOk);
 										}
 									});
 								}

@@ -1,32 +1,17 @@
 /*global SockJS:true*/
-define(['rest/interceptor/mime', 'curl/src/curl/domReady'], function(mime, domReady) {
+define(['./messaging','rest/interceptor/mime', 'curl/src/curl/domReady'], function(Messenger, mime, domReady) {
     var windows = [];
     var name = window.location.hash.substr(1);
     var client = mime();
     if (name) {
-        var session;
-        console.log('Connecting...');
-        var sock = new SockJS('http://localhost:8080/socket');
-        sock.onopen = function() {
-           console.log('open');
-           sock.send(JSON.stringify({}));
+        var privateSub, service = new Messenger('http://localhost:8080');
+        service.onready = function() {
+           console.log('Messaging service ready.');
+           service.onmessage = handleMessage;
+           privateSub = service.subscribe(name);
+           privateSub.onmessage = handleMessage;
         };
-        sock.onmessage = function(e) {
-           console.log('message', e.data);
-           if (!session) {
-                session = JSON.parse(e.data);
-                client({path: 'http://localhost:8080/subscriptions/{bindingKey}/',
-                        params: {bindingKey: name},
-                        headers: { 'Content-Type': 'application/json'},
-                        entity: {id: session.id}}).then(function(response){
-                           console.log(response);
-                        });
-            } else {
-                var command = JSON.parse(e.data).data;
-                handleCommand(command);
-            }
-        };
-        sock.onclose = function() {
+        service.onclose = function() {
            console.log('close');
         };
     
@@ -46,6 +31,11 @@ define(['rest/interceptor/mime', 'curl/src/curl/domReady'], function(mime, domRe
         windows.push(window.open("index.html#rossen", "Rossen", features+",top=360,left=410"));
 
         window.addEventListener("focus", focusListener, false);
+    }
+
+    function handleMessage(topic, msg) {
+        console.log('message received on topic '+topic+': '+JSON.stringify(msg));
+        handleCommand(msg);
     }
 
     function handleCommand(command) {
@@ -113,10 +103,11 @@ define(['rest/interceptor/mime', 'curl/src/curl/domReady'], function(mime, domRe
             ctx.drawImage(img,75,0);
         };
         img.src = 'img/explosion.png';
-        window.setTimeout(function(){
-            client({path: 'http://localhost:8080/messages/broadcast/',
+        service.onmessage = function() {};
+        client({path: 'http://localhost:8080/messages/broadcast/',
                     headers: { 'Content-Type': 'application/json'},
                     entity: {name: name, status: "dead"}});
+        window.setTimeout(function(){
             window.close();
         }, 2000);
     }
